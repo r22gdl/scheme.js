@@ -41,7 +41,14 @@ function readFromTokens(tokens, ast, state) {
 }
 
 function parse(sequence) {
-  
+  const tokens = tokenize(sequence);
+  let ast = [];
+  try {
+    ast = readFromTokens(tokens);
+  } catch (err) {
+    console.log('syntax error\n', err);
+  }
+  return ast;
 }
 
 /*

@@ -1,0 +1,12 @@
+Table of allowable expressions for arithmetic interpreter:
+ Format is the following ...
+(Expression --> Syntax --> Semantics and Example)
+number --> sequence in the form of integer or float --> "1", "1.0" Evaluates to itself.
+procedure call --> (op args ....) -->  op may be one of (+|-|*|/) where args refers to exactly two arguments, each arg being either a number or procedure call "(+ 1 (- 2 5)"
+
+Representations of the source's syntactic forms in the target's language:
+number ............ javascript float
+operator .......... javascript equivalent of operation
+
+
+

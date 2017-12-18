@@ -1,5 +1,5 @@
 const readline = require('readline');
-const { validateArithmetic } = require('./parse');
+const { parse } = require('./parse');
 
 const rl = readline.createInterface({
   input: process.stdin,
@@ -11,7 +11,8 @@ function asyncREPL() {
     if (sequence === 'exit') {
       rl.close();
     } else {
-      validateArithmetic(sequence);
+      var ast = parse(sequence);
+      console.log('asyncREPL, ast:', ast);
       asyncREPL();
     }
   });

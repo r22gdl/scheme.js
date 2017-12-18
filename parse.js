@@ -16,7 +16,6 @@ function Parser() {
     set position (x) { pos = x },
   };
 }
-
 exports.Parser = Parser;
 
 function add(x, y) {
@@ -104,10 +103,30 @@ function isValidEndToNumber (char) {
       return isValidOperator(char);
   }
 }
-/*
-still need to check for end of tokens
-*/
+
+function isValidExpression(expression) {
+  console.log('isValidExpression():', expression);
+  if (expression[0]) { // operator
+    if ((expression[0] === '/' || expression[0] === '*') && 
+    expression[1] && expression[2]) {
+      return true;
+    } else if ((expression[0] === '+' || expression[0] === '-') &&
+    expression[1]) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function getNextNonWhitespace(tokens, parser) {
+  while (tokens[parser.position] === ' ') {
+    parser.ignore();
+  }
+  return tokens[parser.position];
+}
+
 function readNumber(tokens, parser) {
+  console.log('readNumber() position:', parser.position);
   let numericalStr = '';
   let isDecimal = false;
   let isComplete = false;
@@ -120,10 +139,10 @@ function readNumber(tokens, parser) {
       isDecimal = true;
       parser.next();
     }
-    else if isValidDigit(currentToken) {
+    else if (isValidDigit(currentToken)) {
       numericalStr += currentToken;
       parser.next();
-    }tokens[parser.position]
+    }
     else if (isValidEndToNumber(currentToken)) {
       isComplete = true;
     }
@@ -134,64 +153,44 @@ function readNumber(tokens, parser) {
   return parseFloat(numericalStr);
 }
 
-exports.readNumber = readNumber;
-
-function nextChar(tokens, parser) {
-  while (tokens[parser.position] === ' ') {
-    parser.ignore();
-  }
-  return tokens[parser.position];
-}
-
-function readExpression (tokens, parser) {
+function readExpression (tokens, parser, expression) {
+  console.log('readExpression() position:', parser.position);
+  getNextNonWhitespace(tokens, parser);
   let currentToken = tokens[parser.position];
-  let expression = [];
-  expression.push(currentToken); // push operator
-  let continues = true;
-  while (continues) {
-    currentToken = nextChar(tokens, parser);
-    switch (currentToken) {
-      case '(':
-        expression.push(read(tokens, parser));
-        parser.next();
-      case ')':
-        return expression;
-      default:
-        if (isValidDigit(currentToken) || isDecimal(currentToken)) {
-          expression.push(readNumber(tokens, parser));
-          parser.next();
-        }
-    }
-  }
-    if (isValidDigit(currentToken)) {
-      const firstArg = readNumber(tokens, parser);
-      currentToken = nextChar(tokens, parser);
-      if (currentToken === ')') {
-        if (operator === '+') {
-          expression.push(float);
-        } else if (operator === '-') {
-          expression.push(float * (-1));
-        } else {
-          console.log('syntax error at position:', parser.position);
-        }
-      } else if (isValidDigit(currentToken)) {
-        const secondArg = readNumber(tokens, parser);
-        expression.push(se)
-      }
-    }
+  if (currentToken === '(') { // new expression
+    var newExpression = read(tokens, parser);
+    expression.push(newExpression);
+    return readExpression(tokens, parser, expression);
+  } else if (currentToken === ')' && isValidExpression(expression)) { // end of expression
+    console.log('end of expression:', expression);
+    parser.next();
+    return expression;
+  } else if (expression[0] && (isValidDigit(currentToken) || isDecimal(currentToken))) { // number
+    expression.push(readNumber(tokens, parser));
+    parser.next();
+    return readExpression(tokens, parser, expression);
+  } else if (isValidOperator(currentToken) && !expression[0]) { // operator
+    expression.push(currentToken);
+    parser.next();
+    return readExpression(tokens, parser, expression);
+  } else if (currentToken === undefined) { // end of tokens
+    console.log('end of tokens. expression tree:', expression);
+    return expression;
+  } else {
+    console.log('syntax error at position:', parser.position);
   }
 }
 
 function read(tokens, parser) {
-  let currentToken = nextChar(tokens, parser);
+  console.log('read() position:', parser.position);
+  let currentToken = getNextNonWhitespace(tokens, parser);
   if (currentToken === '(') {
-    if (isValidOperator(currentToken)) {
-      readExpression(tokens, parser);
-    } else {
-      console.log('invalid syntax at position: '+ parser.position + '. Expecting operator to denote an operation to be performed or a real number');
-    }
+    parser.next();
+    getNextNonWhitespace(tokens, parser);
+    let emptyExpression = Array();
+    return readExpression(tokens, parser, emptyExpression);
   } else {
-      console.log('invalid syntax at position: '+ parser.position + '. Expecting opening brace to denote an expression');
+      console.log('Invalid syntax at position: '+ parser.position + '. Expecting opening brace to denote an expression');
   }
 }
 
@@ -213,10 +212,7 @@ function parse(programSequence) {
   }
   return ast;
 }
-
 exports.parse = parse;
-
-
 
 /*
   Sequence has already been screened for syntax errors, all strings expected to be operators
@@ -230,24 +226,4 @@ function evaluate(x) {
     return procedure(args[0], args[1]);
   }
 }
-
 exports.eval = evaluate;
-
-
-// function peek (tokens, parser) {
-//   nextChar(tokens, parser);
-//   const startPosition = parser.position;
-  
-//   let currentToken;
-//   currentToken = tokens[parser.position];
-//   if (currentToken === '-' || currentToken === '+') {
-//     let isAtom = false;
-//     let isExpression = false;
-//     while (!isAtom || ~isExpression) {
-//       nextChar(tokens, parser);
-//       currentToken = tokens[parser.position];
-//       if (currentToken)
-//     } 
-//   }
-//   nextChar();
-// }

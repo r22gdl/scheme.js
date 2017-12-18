@@ -1,50 +1,8 @@
-function Parser() {
-  let pos = 0;
-
-  function ignore() {
-    pos += 1;
-  }
-
-  function next() {
-    pos += 1;
-  }
-
-  return {
-    ignore,
-    next,
-    get position () { return pos },
-    set position (x) { pos = x },
-  };
-}
-exports.Parser = Parser;
-
-function add(x, y) {
-  return x + y;
-}
-
-function subtract(x, y) {
-  return x - y;
-}
-
-function multiply(x, y) {
-  return x * y;
-}
-
-function divide(x, y) {
-  return x / y;
-}
-
-const ENV = {
-  '+': add,
-  '-': subtract,
-  '*': multiply,
-  '/': divide,
-};
-
+/* eslint spaced-comment: 0, jsx-a11y/href-no-hash: 0, max-len: 0, no-use-before-define: 0, prefer-template: 0*/
 function tokenize(sequence) {
   return sequence.split('');
 }
-
+/*********************** GENERAL METHODS ***************************/
 function isValidDigit(char) {
   switch (char) {
     case '1':
@@ -91,7 +49,7 @@ function isDecimal(char) {
   return char === '.';
 }
 
-function isValidEndToNumber (char) {
+function isValidEndToNumber(char) {
   switch (char) {
     case '(':
       return true;
@@ -105,9 +63,9 @@ function isValidEndToNumber (char) {
 }
 
 function isValidExpression(expression) {
-  console.log('isValidExpression():', expression);
+  // console.log('isValidExpression():', expression);
   if (expression[0]) { // operator
-    if ((expression[0] === '/' || expression[0] === '*') && 
+    if ((expression[0] === '/' || expression[0] === '*') &&
     expression[1] && expression[2]) {
       return true;
     } else if ((expression[0] === '+' || expression[0] === '-') &&
@@ -118,6 +76,26 @@ function isValidExpression(expression) {
   return false;
 }
 
+/************************ PARSER SPECIFIC METHODS ******************/
+function Parser() {
+  let pos = 0;
+
+  function ignore() {
+    pos += 1;
+  }
+
+  function next() {
+    pos += 1;
+  }
+
+  return {
+    ignore,
+    next,
+    get position() { return pos; },
+    set position(x) { pos = x; },
+  };
+}
+
 function getNextNonWhitespace(tokens, parser) {
   while (tokens[parser.position] === ' ') {
     parser.ignore();
@@ -126,43 +104,54 @@ function getNextNonWhitespace(tokens, parser) {
 }
 
 function readNumber(tokens, parser) {
-  console.log('readNumber() position:', parser.position);
+  // console.log('readNumber() position:', parser.position);
   let numericalStr = '';
-  let isDecimal = false;
+  let hasDecimal = false;
   let isComplete = false;
-  let isNegative
+  // let isNegative
   let currentToken;
-  while(!isComplete) {
+  while (!isComplete) {
     currentToken = tokens[parser.position];
-    if (!isDecimal && currentToken === '.') {
+    if (!hasDecimal && currentToken === '.') {
       numericalStr += currentToken;
-      isDecimal = true;
+      hasDecimal = true;
       parser.next();
-    }
-    else if (isValidDigit(currentToken)) {
+    } else if (isValidDigit(currentToken)) {
       numericalStr += currentToken;
       parser.next();
-    }
-    else if (isValidEndToNumber(currentToken)) {
+    } else if (isValidEndToNumber(currentToken)) {
       isComplete = true;
-    }
-    else {
-      return TypeError('Incorrect numerical input at position: ' +  parser.position);
+    } else {
+      return TypeError('Incorrect numerical input at position: ' + parser.position);
     }
   }
   return parseFloat(numericalStr);
 }
 
-function readExpression (tokens, parser, expression) {
-  console.log('readExpression() position:', parser.position);
+function read(tokens, parser) {
+  // console.log('read() position:', parser.position);
+  const currentToken = getNextNonWhitespace(tokens, parser);
+  if (currentToken === '(') {
+    parser.next();
+    getNextNonWhitespace(tokens, parser);
+    const emptyExpression = [];
+    return readExpression(tokens, parser, emptyExpression);
+  }
+  // console.log('Invalid syntax at position: '+ parser.position +
+  //'. Expecting opening brace to denote an expression');
+  return null;
+}
+
+function readExpression(tokens, parser, expression) {
+  // console.log('readExpression() position:', parser.position);
   getNextNonWhitespace(tokens, parser);
-  let currentToken = tokens[parser.position];
+  const currentToken = tokens[parser.position];
   if (currentToken === '(') { // new expression
-    var newExpression = read(tokens, parser);
+    const newExpression = read(tokens, parser);
     expression.push(newExpression);
     return readExpression(tokens, parser, expression);
   } else if (currentToken === ')' && isValidExpression(expression)) { // end of expression
-    console.log('end of expression:', expression);
+    // console.log('end of expression:', expression);
     parser.next();
     return expression;
   } else if (expression[0] && (isValidDigit(currentToken) || isDecimal(currentToken))) { // number
@@ -174,33 +163,22 @@ function readExpression (tokens, parser, expression) {
     parser.next();
     return readExpression(tokens, parser, expression);
   } else if (currentToken === undefined) { // end of tokens
-    console.log('end of tokens. expression tree:', expression);
+    // console.log('end of tokens. expression tree:', expression);
     return expression;
-  } else {
-    console.log('syntax error at position:', parser.position);
   }
+  // console.log('syntax error at position:', parser.position);
+  return null;
 }
 
-function read(tokens, parser) {
-  console.log('read() position:', parser.position);
-  let currentToken = getNextNonWhitespace(tokens, parser);
-  if (currentToken === '(') {
-    parser.next();
-    getNextNonWhitespace(tokens, parser);
-    let emptyExpression = Array();
-    return readExpression(tokens, parser, emptyExpression);
-  } else {
-      console.log('Invalid syntax at position: '+ parser.position + '. Expecting opening brace to denote an expression');
-  }
-}
 
 function buildAST(tokens, parser) {
   if (!tokens || tokens.length === 0) {
-    return;
+    return [];
   }
   return read(tokens, parser);
 }
 
+/************************** EXPORT *****************************/
 function parse(programSequence) {
   const tokens = tokenize(programSequence);
   let ast = [];
@@ -208,22 +186,9 @@ function parse(programSequence) {
   try {
     ast = buildAST(tokens, parser);
   } catch (err) {
-    console.log('syntax error\n', err);
+    // console.log('syntax error\n', err);
   }
   return ast;
 }
-exports.parse = parse;
 
-/*
-  Sequence has already been screened for syntax errors, all strings expected to be operators
-*/
-function evaluate(x) {
-  if (typeof x === 'number') {
-    return x;
-  } else { // read expression
-    const procedure = x[0]; // arithmetic procedure
-    const args = x.slice(1, x.length).map((y) => evaluate(y));
-    return procedure(args[0], args[1]);
-  }
-}
-exports.eval = evaluate;
+exports.parse = parse;

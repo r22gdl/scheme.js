@@ -8,5 +8,5 @@ Representations of the source's syntactic forms in the target's language:
 number ............ javascript float
 operator .......... javascript equivalent of operation
 
-
-
+What should I do when I see a close paren:
+I thought of this sequence "(+ 1 2) * 2 3)" which wouldn't be a problem. 

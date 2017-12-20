@@ -96,6 +96,16 @@ function Parser() {
   };
 }
 
+function remainingTokens(tokens, parser) {
+  // console.log('remainingTokens() parser.position: ' + parser.position + ' tokens.length - 1: ' +
+    // (tokens.length - 1));
+  getNextNonWhitespace(tokens, parser);
+  if (parser.position <= tokens.length - 1) {
+    return true;
+  }
+  return false;
+}
+
 function getNextNonWhitespace(tokens, parser) {
   while (tokens[parser.position] === ' ') {
     parser.ignore();
@@ -108,7 +118,6 @@ function readNumber(tokens, parser) {
   let numericalStr = '';
   let hasDecimal = false;
   let isComplete = false;
-  // let isNegative
   let currentToken;
   while (!isComplete) {
     currentToken = tokens[parser.position];
@@ -128,54 +137,71 @@ function readNumber(tokens, parser) {
   return parseFloat(numericalStr);
 }
 
-function read(tokens, parser) {
-  // console.log('read() position:', parser.position);
-  const currentToken = getNextNonWhitespace(tokens, parser);
-  if (currentToken === '(') {
-    parser.next();
-    getNextNonWhitespace(tokens, parser);
-    const emptyExpression = [];
-    return readExpression(tokens, parser, emptyExpression);
-  }
-  // console.log('Invalid syntax at position: '+ parser.position +
-  //'. Expecting opening brace to denote an expression');
-  return null;
-}
-
 function readExpression(tokens, parser, expression) {
-  // console.log('readExpression() position:', parser.position);
+  console.log('readExpression() position: ' + parser.position);
   getNextNonWhitespace(tokens, parser);
+  // console.log('readExpression() position:', parser.position);
   const currentToken = tokens[parser.position];
   if (currentToken === '(') { // new expression
-    const newExpression = read(tokens, parser);
-    expression.push(newExpression);
-    return readExpression(tokens, parser, expression);
+    console.log('currentToken === (');
+    if (expression[0]) {
+      console.log('expression[0] defined');
+      const newExpression = read(tokens, parser);
+      if (newExpression !== null) {
+        console.log('newExpression !== null');
+        expression.push(newExpression);
+        return readExpression(tokens, parser, expression);
+      }
+    }
+    console.log('Unexpected token ( at position ' + parser.position + '. An expression is an operation on one or more expressions.');
+    return null;
   } else if (currentToken === ')' && isValidExpression(expression)) { // end of expression
-    // console.log('end of expression:', expression);
     parser.next();
     return expression;
   } else if (expression[0] && (isValidDigit(currentToken) || isDecimal(currentToken))) { // number
     expression.push(readNumber(tokens, parser));
-    parser.next();
     return readExpression(tokens, parser, expression);
   } else if (isValidOperator(currentToken) && !expression[0]) { // operator
     expression.push(currentToken);
     parser.next();
     return readExpression(tokens, parser, expression);
   } else if (currentToken === undefined) { // end of tokens
-    // console.log('end of tokens. expression tree:', expression);
-    return expression;
+    console.log('Reached end of input without completing an expression. Denote the start of an expression with an open paren and the end of an expression with a close paren.');
+    return null;
   }
   // console.log('syntax error at position:', parser.position);
   return null;
 }
 
+function read(tokens, parser) {
+  const currentToken = getNextNonWhitespace(tokens, parser);
+  // console.log('read() parser.position: ', parser.position);
+  if (currentToken === '(') {
+    parser.next();
+    const emptyExpression = [];
+    return readExpression(tokens, parser, emptyExpression);
+  }
+  console.log('Syntax error. Expected opening parenthesis to denote main expression to ' + 
+    'to be resolved but none found.');
+  return null;
+}
 
 function buildAST(tokens, parser) {
   if (!tokens || tokens.length === 0) {
     return [];
   }
-  return read(tokens, parser);
+  let ast;
+  let attempt = false;
+  while (remainingTokens(tokens, parser)) {
+    if (!attempt) {
+      ast = read(tokens, parser);
+      attempt = true;
+    } else {
+      ast = [];
+      break;
+    }
+  }
+  return ast;
 }
 
 /************************** EXPORT *****************************/

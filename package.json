@@ -1,0 +1,13 @@
+{
+  "name": "schemeInterpeterJS",
+  "version": "1.0.0",
+  "description": "REPL interpreter for a subset of Scheme, a dialect of the Lisp programming language",
+  "main": "index.js",
+  "author": "Raphael Osorio",
+  "license": "ISC",
+  "devDependencies": {
+    "eslint": "^4.13.1",
+    "eslint-config-airbnb-base": "^12.1.0",
+    "eslint-plugin-import": "^2.8.0"
+  }
+}

@@ -1,8 +1,14 @@
 /* eslint spaced-comment: 0, jsx-a11y/href-no-hash: 0, max-len: 0, no-use-before-define: 0, prefer-template: 0, no-console: 0*/
+
+/********************** TOKENIZER ***********************************/
+function tokenize(sequence) {
+  return sequence.split('');
+}
+
 /********************** CUSTOM SYNTAX ERROR TYPE ***************************/
-function SchemeSyntaxError(blurb) {
-  const errorDescription = 'Invalid Scheme syntax: ' + blurb;
-  const instance = new Error(errorDescription);
+function SchemeSyntaxError(description) {
+  const message = 'Invalid Scheme syntax:\n' + description;
+  const instance = new Error(message);
   Object.setPrototypeOf(instance, Object.getPrototypeOf(this));
   return instance;
 }
@@ -16,9 +22,8 @@ SchemeSyntaxError.prototype = Object.create(Error.prototype, {
   },
 });
 
-/********************** TOKENIZER ***********************************/
-function tokenize(sequence) {
-  return sequence.split('');
+function errorDescription(token, position, message) {
+  return 'Unexpected token \'' + token + '\' at position ' + position + '.\n' + message;
 }
 
 /*********************** GENERAL METHODS ****************************/
@@ -70,19 +75,21 @@ function isDecimal(char) {
 
 
 function isValidExpression(expression) {
-  console.log('isValidExpression():', expression);
+  // console.log('isValidExpression():', expression);
   if (expression[0]) { // operator
     if (expression[0] === '/' || expression[0] === '*') {
       if (expression[1] && expression[2]) {
         return true;
       }
-      throw new SchemeSyntaxError('A division or product operator must be followed by a total of at least two expressions and/or numbers.');
+      throw new SchemeSyntaxError('A division or product operator must ' +
+        'be followed by a total of at least two expressions and/or numbers.');
     }
     if (expression[0] === '+' || expression[0] === '-') {
       if (expression[1]) {
         return true;
       }
-      throw new SchemeSyntaxError('An addition or subtraction operator must be followed by at least one number and/or expression.');
+      throw new SchemeSyntaxError('An addition or subtraction operator must ' +
+        'be followed by at least one number and/or expression.');
     }
   }
   throw new SchemeSyntaxError('An expression must contain exactly one operator.');
@@ -109,7 +116,8 @@ function Parser() {
 }
 
 function tokensRemain(tokens, parser) {
-  console.log('tokensRemain() parser.position: ' + parser.position + ' tokens.length - 1: ' + (tokens.length - 1));
+  // console.log('tokensRemain() parser.position: ' +
+  //   parser.position + ' tokens.length - 1: ' + (tokens.length - 1));
   getNextNonWhitespace(tokens, parser);
   if (parser.position <= tokens.length - 1) {
     return true;
@@ -125,24 +133,30 @@ function getNextNonWhitespace(tokens, parser) {
 }
 
 function readNumber(tokens, parser) {
-  console.log('readNumber() position:', parser.position);
+  // console.log('readNumber() position:', parser.position);
   let numericalStr = '';
   let hasDecimal = false;
+  let hasDigit = false;
   let isComplete = false;
-  let currentToken;
   while (!isComplete) {
-    currentToken = tokens[parser.position];
+    const currentToken = tokens[parser.position];
     if (!hasDecimal && currentToken === '.') {
       numericalStr += currentToken;
       hasDecimal = true;
       parser.next();
     } else if (isValidDigit(currentToken)) {
+      hasDigit = true;
       numericalStr += currentToken;
       parser.next();
-    } else if (currentToken === ' ' || currentToken === '(' || currentToken === ')') {
+    } else if ((currentToken === ' ' || currentToken === '(' || currentToken === ')'
+      || currentToken === undefined) && ((hasDecimal && hasDigit) || hasDigit)) {
       isComplete = true;
     } else {
-      throw new SchemeSyntaxError('Unexpected token ' + currentToken + ' at position ' + parser.position + '. A number must consist of only digits and at most one decimal symbol.');
+      throw new SchemeSyntaxError(errorDescription(
+        currentToken,
+        parser.position,
+        'A number must consist of at least one digit and at most one decimal symbol.',
+      ));
     }
   }
   return parseFloat(numericalStr);
@@ -150,7 +164,7 @@ function readNumber(tokens, parser) {
 
 function readExpression(tokens, parser, expression) {
   getNextNonWhitespace(tokens, parser);
-  console.log('readExpression() position:', parser.position, ' expression: ', expression);
+  // console.log('readExpression() position:', parser.position, ' expression: ', expression);
   const currentToken = tokens[parser.position];
 
   if (currentToken === '(') { // new expression
@@ -159,7 +173,11 @@ function readExpression(tokens, parser, expression) {
       expression.push(newExpression);
       return readExpression(tokens, parser, expression);
     }
-    throw new SchemeSyntaxError('Unexpected token ' + currentToken + ' at position ' + parser.position + '. Expected an operator to denote the operation associated with the expression previously declared.');
+    throw new SchemeSyntaxError(errorDescription(
+      currentToken,
+      parser.position,
+      'Expected an operator to denote the operation associated with the expression previously declared.',
+    ));
   }
 
   if (currentToken === ')') { // end of expression
@@ -174,7 +192,11 @@ function readExpression(tokens, parser, expression) {
       expression.push(readNumber(tokens, parser));
       return readExpression(tokens, parser, expression);
     }
-    throw new SchemeSyntaxError('Unexpected token ' + currentToken + ' at position ' + parser.position + '. An expression must begin with an operator before the first instance of a number.');
+    throw new SchemeSyntaxError(errorDescription(
+      currentToken,
+      parser.position,
+      'An expression must begin with an operator before the first instance of a number.',
+    ));
   }
 
   if (isValidOperator(currentToken)) { // operator
@@ -183,19 +205,28 @@ function readExpression(tokens, parser, expression) {
       parser.next();
       return readExpression(tokens, parser, expression);
     }
-    throw new SchemeSyntaxError('Unexpected token ' + currentToken + ' at position ' + parser.position + '. An expression consists of exactly one operator followed by any combination of numbers or expressions.');
+    throw new SchemeSyntaxError(errorDescription(
+      currentToken,
+      parser.position,
+      'An expression consists of exactly one operator followed by any combination of numbers or expressions.',
+    ));
   }
 
   if (currentToken === undefined) { // end of tokens
-    throw new SchemeSyntaxError('Reached end of input without closing an expression with a \')\'. Denote the start of an expression with an open paren and the end of an expression with a close paren.');
+    throw new SchemeSyntaxError('Reached end of input without closing an expression with a \')\'.\n' +
+      'Denote the start of an expression with an open paren and the end of an expression with a close paren.');
   }
 
-  throw new SchemeSyntaxError('Unexpected token ' + currentToken + ' at position ' + parser.position + '. Reached end of readExpression().');
+  throw new SchemeSyntaxError(errorDescription(
+    currentToken,
+    parser.position,
+    'Reached end of readExpression().',
+  ));
 }
 
 function read(tokens, parser) {
   const currentToken = getNextNonWhitespace(tokens, parser);
-  console.log('read() parser.position: ', parser.position);
+  // console.log('read() parser.position: ', parser.position);
   if (currentToken === '(') {
     parser.next();
     const emptyExpression = [];
@@ -203,7 +234,11 @@ function read(tokens, parser) {
   } else if (currentToken === undefined) { // nothing
     return [];
   }
-  throw new SchemeSyntaxError('Unexpected token ' + currentToken + ' at position ' + parser.position + '. Expected open paren to denote the start of the main expression.');
+  throw new SchemeSyntaxError(errorDescription(
+    currentToken,
+    parser.position,
+    'Expected an \'(\' to denote the start of the main expression.',
+  ));
 }
 
 function buildAST(tokens, parser) {
@@ -214,7 +249,11 @@ function buildAST(tokens, parser) {
   ast = read(tokens, parser);
   if (tokensRemain(tokens, parser)) {
     const currentToken = tokens[parser.position];
-    throw new SchemeSyntaxError('Unexpected token ' + currentToken + ' at position ' + parser.position + '. No symbols expected beyond the final close paren that denotes the end of the main expression.');
+    throw new SchemeSyntaxError(errorDescription(
+      currentToken,
+      parser.position,
+      'No symbols expected beyond the final close paren that denotes the end of the main expression.',
+    ));
   }
   return ast;
 }
@@ -227,8 +266,13 @@ function parse(programSequence) {
   try {
     ast = buildAST(tokens, parser);
   } catch (err) {
-    console.error(err.message);
-    return [];
+    if (err instanceof SchemeSyntaxError) {
+      console.error(err.message);
+      return [];
+    }
+    console.error(err);
+    console.error('Unhandled error in Scheme interpreter at position ' + parser.position + '. Exiting.');
+    process.exit(1);
   }
   return ast;
 }

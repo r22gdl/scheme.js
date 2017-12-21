@@ -1,8 +1,27 @@
 /* eslint spaced-comment: 0, jsx-a11y/href-no-hash: 0, max-len: 0, no-use-before-define: 0, prefer-template: 0*/
+/********************** CUSTOM SYNTAX ERROR TYPE ***************************/
+function SchemeSyntaxError(blurb) {
+  const errorDescription = 'Invalid Scheme syntax: ' + blurb;
+  const instance = new Error(errorDescription);
+  Object.setPrototypeOf(instance, Object.getPrototypeOf(this));
+  return instance;
+}
+
+SchemeSyntaxError.prototype = Object.create(Error.prototype, {
+  constructor: {
+    value: Error,
+    enumerable: false,
+    writable: true,
+    configurable: true
+  }
+});
+
+/********************** TOKENIZER ***********************************/
 function tokenize(sequence) {
   return sequence.split('');
 }
-/*********************** GENERAL METHODS ***************************/
+
+/*********************** GENERAL METHODS ****************************/
 function isValidDigit(char) {
   switch (char) {
     case '1':
@@ -190,16 +209,11 @@ function buildAST(tokens, parser) {
   if (!tokens || tokens.length === 0) {
     return [];
   }
-  let ast;
-  let attempt = false;
-  while (remainingTokens(tokens, parser)) {
-    if (!attempt) {
-      ast = read(tokens, parser);
-      attempt = true;
-    } else {
-      ast = [];
-      break;
-    }
+
+  let ast = [];
+  ast = read(tokens, parser);
+  if (!ast) {
+    return 
   }
   return ast;
 }
@@ -212,7 +226,7 @@ function parse(programSequence) {
   try {
     ast = buildAST(tokens, parser);
   } catch (err) {
-    // console.log('syntax error\n', err);
+    return [];
   }
   return ast;
 }

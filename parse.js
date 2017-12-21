@@ -75,7 +75,6 @@ function isDecimal(char) {
 
 
 function isValidExpression(expression) {
-  // console.log('isValidExpression():', expression);
   if (expression[0]) { // operator
     if (expression[0] === '/' || expression[0] === '*') {
       if (expression[1] && expression[2]) {
@@ -116,8 +115,6 @@ function Parser() {
 }
 
 function tokensRemain(tokens, parser) {
-  // console.log('tokensRemain() parser.position: ' +
-  //   parser.position + ' tokens.length - 1: ' + (tokens.length - 1));
   getNextNonWhitespace(tokens, parser);
   if (parser.position <= tokens.length - 1) {
     return true;
@@ -133,7 +130,6 @@ function getNextNonWhitespace(tokens, parser) {
 }
 
 function readNumber(tokens, parser) {
-  // console.log('readNumber() position:', parser.position);
   let numericalStr = '';
   let hasDecimal = false;
   let hasDigit = false;
@@ -164,7 +160,6 @@ function readNumber(tokens, parser) {
 
 function readExpression(tokens, parser, expression) {
   getNextNonWhitespace(tokens, parser);
-  // console.log('readExpression() position:', parser.position, ' expression: ', expression);
   const currentToken = tokens[parser.position];
 
   if (currentToken === '(') { // new expression
@@ -226,7 +221,6 @@ function readExpression(tokens, parser, expression) {
 
 function read(tokens, parser) {
   const currentToken = getNextNonWhitespace(tokens, parser);
-  // console.log('read() parser.position: ', parser.position);
   if (currentToken === '(') {
     parser.next();
     const emptyExpression = [];
@@ -270,8 +264,8 @@ function parse(programSequence) {
       console.error(err.message);
       return [];
     }
-    console.error(err);
-    console.error('Unhandled error in Scheme interpreter at position ' + parser.position + '. Exiting.');
+    console.error('Unhandled error in Scheme interpreter at position ' + parser.position + '. Exiting.\n'
+      + err);
     process.exit(1);
   }
   return ast;

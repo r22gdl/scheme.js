@@ -1,5 +1,6 @@
 const readline = require('readline');
 const { parse } = require('./parse');
+// const execute = require('./execute');
 
 const rl = readline.createInterface({
   input: process.stdin,
@@ -7,12 +8,14 @@ const rl = readline.createInterface({
 });
 
 function asyncREPL() {
-  rl.question('schemeInterpreter >> ', (sequence) => {
+  rl.question('>> ', (sequence) => {
     if (sequence === 'exit') {
       rl.close();
     } else {
-      var ast = parse(sequence);
-      console.log('asyncREPL, ast:', ast);
+      const ast = parse(sequence);
+      //const resolve = execute(ast);
+      //console.log('type: ', typeof resolve);
+      //console.log(resolve);
       asyncREPL();
     }
   });

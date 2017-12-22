@@ -1,6 +1,6 @@
 const readline = require('readline');
 const { parse } = require('./parse');
-// const execute = require('./execute');
+const { evaluate } = require('./evaluate');
 
 const rl = readline.createInterface({
   input: process.stdin,
@@ -13,10 +13,10 @@ function asyncREPL() {
       rl.close();
     } else {
       const ast = parse(sequence);
-      //const resolve = execute(ast);
-      //console.log('type: ', typeof resolve);
-      //console.log(resolve);
+      const result = evaluate(ast);
+      console.log('Result: ', result);
       asyncREPL();
+
     }
   });
 }

@@ -215,7 +215,7 @@ function readExpression(tokens, parser, expression) {
   throw new SchemeSyntaxError(errorDescription(
     currentToken,
     parser.position,
-    'Reached end of readExpression().',
+    'Unexpectedly reached end of tokens.',
   ));
 }
 
@@ -225,7 +225,7 @@ function read(tokens, parser) {
     parser.next();
     const emptyExpression = [];
     return readExpression(tokens, parser, emptyExpression);
-  } else if (currentToken === undefined) { // nothing
+  } else if (currentToken === undefined) { // user entered nothing
     return [];
   }
   throw new SchemeSyntaxError(errorDescription(

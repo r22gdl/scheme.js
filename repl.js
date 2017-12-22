@@ -13,8 +13,10 @@ function asyncREPL() {
       rl.close();
     } else {
       const ast = parse(sequence);
-      const result = evaluate(ast);
-      console.log('Result: ', result);
+      if(ast[0]) {
+        const result = evaluate(ast);
+        console.log('Result: ', result);
+      }
       asyncREPL();
 
     }

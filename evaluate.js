@@ -24,54 +24,40 @@ const ENV = {
 };
 
 /**************************** EVALUATE LOGIC *********************************/
-function shiftLeft(array) {
-  array[0] = array[1];
-}
-
 function evaluateWrapper(ast) {
-  console.log('evaluateWrapper()');
   return evaluate(ast, 0);
 }
 
 function evaluate(ast, index) {
-  console.log('evaluate() index:', index);
-  let currentNode = ast[index];
+  const currentNode = ast[index]; // node in abstract syntax tree (ast)
   let currentIndex = index;
-  const stack = [];
-  if (typeof currentNode === 'number') {
-    console.log('typeof currentNode === number');
+
+  if (typeof currentNode === 'number') { // base case, node is a number
     return currentNode;
   }
-  if (typeof currentNode === 'object') {
-    console.log('typeof currentNode === object');
+  if (typeof currentNode === 'object') { // recursive case, node is another expression
     return evaluate(currentNode, 0);
   }
-  if (typeof currentNode === 'string') {
-    console.log('typeof currentNode === string');
+  if (typeof currentNode === 'string') { // evaluate expression
     const operation = ENV[currentNode];
-    let queue = [];
+    const queue = []; // holds arguments as we perform operation on args
     currentIndex += 1;
-    console.log('operation:', operation.name);
     while (currentIndex < ast.length) {
-      console.log('currentIndex:', currentIndex);
       if (queue[0]) {
-        queue[1] = evaluate(ast, currentIndex);
-        console.log('queue[1]');
+        queue[1] = evaluate(ast, currentIndex); // place next argument at end of queue
         const result = operation(queue[0], queue[1]);
-        queue[0] = result;
+        queue[0] = result; // place result at head of queue
       } else {
-        queue[0] = evaluate(ast, currentIndex);
-        console.log('set queue[0] to:', queue[0]);
+        queue[0] = evaluate(ast, currentIndex); // first argument
       }
       currentIndex += 1;
     }
-    if (!queue[1] && operation.name === 'subtract') {
-      console.log('subtract single atom');
-      queue[0] = (-1) * queue[0];
+    if (!queue[1] && operation.name === 'subtract') { // if 1 arg expression & operator is '-'
+      queue[0] *= -1;
     }
     return queue[0];
   }
-  console.log('error: reached end of evaluate without returning');
+  throw new Error('Unexpectedly reached end of evaluate function without returning result.');
 }
 
 exports.evaluate = evaluateWrapper;
